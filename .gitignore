@@ -8,3 +8,14 @@
 +local.properties
 +.gradle
 +.DS_Store
+.idea
+local.properties
+build
+.gradle
+**/bin/*
+**/gen/*
+wear/src/main/.classpath
+wear/src/main/.project
+wear/src/main/project.properties
+mobile/src/main/project.properties
+openhab.android.iml

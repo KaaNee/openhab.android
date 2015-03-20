@@ -598,8 +598,10 @@ public class OpenHABWidgetAdapter extends ArrayAdapter<OpenHABWidget> {
 					Log.d(TAG, "Spinner onItemSelected selected label = " + selectedLabel);
 					OpenHABWidget openHABWidget = (OpenHABWidget)parent.getTag();
 					if (openHABWidget != null) {
-						Log.d(TAG, "Label selected = " + openHABWidget.getMapping(index).getLabel());
-						Iterator<OpenHABWidgetMapping> mappingIterator = openHABWidget.getMappings().iterator();
+                        ArrayList<OpenHABWidgetMapping> mappings = openHABWidget.getMappings();
+                        OpenHABWidgetMapping currentMapping = mappings.get(index);
+                        Log.d(TAG, "Label selected = " + currentMapping!=null?currentMapping.getLabel():"<nocurrentMapping>");
+						Iterator<OpenHABWidgetMapping> mappingIterator = mappings.iterator();
 						while (mappingIterator.hasNext()) {
 							OpenHABWidgetMapping openHABWidgetMapping = mappingIterator.next();
 							if (openHABWidgetMapping.getLabel().equals(selectedLabel)) {
