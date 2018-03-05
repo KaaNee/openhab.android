@@ -1,24 +1,24 @@
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.4.0
- *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.openhab.habdroid.model;
 
 import android.graphics.Color;
+import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This is a class to hold basic information about openHAB Item.
@@ -27,8 +27,11 @@ import org.w3c.dom.NodeList;
 public class OpenHABItem {
 	private String name;
 	private String type;
+	private String groupType;
 	private String state = "";
 	private String link;
+	private final static String TAG = OpenHABItem.class.getSimpleName();
+	private final static Pattern HSB_PATTERN = Pattern.compile("^([0-9]*\\.?[0-9]+),([0-9]*\\.?[0-9]+),([0-9]*\\.?[0-9]+)$");
 
 	public OpenHABItem(Node startNode) {
 		if (startNode.hasChildNodes()) {
@@ -37,11 +40,13 @@ public class OpenHABItem {
 				Node childNode = childNodes.item(i);
 				if (childNode.getNodeName().equals("type")) {
 					this.setType(childNode.getTextContent());
+				} else if (childNode.getNodeName().equals("groupType")) {
+					this.setGroupType(childNode.getTextContent());
 				} else if (childNode.getNodeName().equals("name")) {
 					this.setName(childNode.getTextContent());
 				} else if (childNode.getNodeName().equals("state")) {
 					if (childNode.getTextContent().equals("Uninitialized")) {
-						this.setState("0");
+						this.setState(null);
 					} else {
 						this.setState(childNode.getTextContent());
 					}
@@ -56,11 +61,15 @@ public class OpenHABItem {
             try {
                 if (jsonObject.has("type"))
                     this.setType(jsonObject.getString("type"));
+				if (jsonObject.has("groupType"))
+					this.setGroupType(jsonObject.getString("groupType"));
                 if (jsonObject.has("name"))
                     this.setName(jsonObject.getString("name"));
                 if (jsonObject.has("state")) {
-                    if (jsonObject.getString("state").equals("Uninitialized")) {
-                        this.setState("0");
+                    if (jsonObject.getString("state").equals("NULL") ||
+                            jsonObject.getString("state").equals("UNDEF") ||
+                            jsonObject.getString("state").equalsIgnoreCase("undefined")) {
+                        this.setState(null);
                     } else {
                         this.setState(jsonObject.getString("state"));
                     }
@@ -68,7 +77,7 @@ public class OpenHABItem {
                 if (jsonObject.has("link"))
                     this.setLink(jsonObject.getString("link"));
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.d(TAG, "Error while parsing openHAB item", e);
             }
     }
 	
@@ -88,6 +97,14 @@ public class OpenHABItem {
 		this.type = type;
 	}
 
+	public String getGroupType() {
+		return groupType;
+	}
+
+	public void setGroupType(String groupType) {
+		this.groupType = groupType;
+	}
+
 	public String getState() {
 		return state;
 	}
@@ -95,36 +112,62 @@ public class OpenHABItem {
 	public void setState(String state) {
 		this.state = state;
 	}
-	
+
 	public boolean getStateAsBoolean() {
+		// For uninitialized/null state return false
+		if (state == null) {
+			return false;
+		}
 		// If state is ON for switches return True
 		if (state.equals("ON")) {
 			return true;
 		}
-		// If decimal value and it is >0 return True
+
+        try {
+            return getStateAsBrightness() != 0;
+        } catch (Exception ignored) {
+            return isValueDecimalIntegerAndGreaterThanZero(state);
+        }
+	}
+
+	private Boolean isValueDecimalIntegerAndGreaterThanZero(String value) {
 		try {
-			int decimalValue = Integer.valueOf(state);
-			if (decimalValue > 0)
-				return true;
+			int decimalValue = Integer.valueOf(value);
+			return decimalValue > 0;
 		} catch (NumberFormatException e) {
 			return false;
 		}
-		// Else return False
-		return false;
 	}
-	
+
 	public Float getStateAsFloat() {
-		return Float.parseFloat(state);
+		Float result;
+		// For uninitialized/null state return zero
+		if (state == null) {
+			result = 0f;
+		} else if ("ON".equals(state)) {
+			result = 100f;
+		} else if ("OFF".equals(state)) {
+			result = 0f;
+		} else {
+			try {
+				result = Float.parseFloat(state);
+			} catch (NumberFormatException e) {
+				result = 0f;
+			}
+		}
+		return result;
 	}
 
 	public float[] getStateAsHSV() {
+		if (state == null) {
+			return new float[]{0, 0, 0};
+		}
 		String[] stateSplit = state.split(",");
 		if (stateSplit.length == 3) { // We need exactly 3 numbers to operate this
-			float[] result = {Float.parseFloat(stateSplit[0]), Float.parseFloat(stateSplit[1])/100, Float.parseFloat(stateSplit[2])/100};
-			return result;
+			return new float[]{Float.parseFloat(stateSplit[0]), Float.parseFloat(stateSplit[1])/100,
+					Float.parseFloat(stateSplit[2])/100};
 		} else {
-			float[] result = {0, 0, 0};
-			return result;
+            return new float[]{0, 0, 0};
 		}
 	}
 
@@ -139,5 +182,16 @@ public class OpenHABItem {
 	public void setLink(String link) {
 		this.link = link;
 	}
-	
+
+	public int getStateAsBrightness() {
+        Matcher hsbMatcher = HSB_PATTERN.matcher(state);
+        if(hsbMatcher.find()) {
+            try {
+                return Float.valueOf(hsbMatcher.group(3)).intValue();
+            } catch (Exception e) {
+                throw new IllegalStateException("No brightness");
+            }
+        }
+        throw new IllegalStateException("No brightness");
+    }
 }

@@ -1,25 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/mainmenu_openhab_preferences"
-          android:title="@string/mainmenu_openhab_preferences" 
-          />
-    <item android:id="@+id/mainmenu_openhab_selectsitemap"
-          android:title="@string/mainmenu_openhab_selectsitemap" 
-          />
-    <item android:id="@+id/mainmenu_openhab_writetag"
-          android:title="@string/mainmenu_openhab_writetag"
-          />
-    <item android:id="@+id/mainmenu_openhab_info"
-          android:title="@string/mainmenu_openhab_info"
-            />
-    <item android:id="@+id/mainmenu_openhab_clearcache"
-          android:title="@string/mainmenu_openhab_clearcache"
-          />
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-            android:id="@+id/mainmenu_voice_recognition"
-            android:orderInCategory="100"
-            android:showAsAction="always"
-            android:icon="?attr/customMicIcon"
-            android:title="Voice Recognition"
-        />
+        android:id="@+id/mainmenu_voice_recognition"
+        android:icon="@drawable/ic_mic_black_24dp"
+        android:orderInCategory="100"
+        android:title="@string/mainmenu_openhab_voice_recognition"
+        app:showAsAction="always" />
 </menu>

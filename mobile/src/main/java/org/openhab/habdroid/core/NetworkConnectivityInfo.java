@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
+ *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ */
+
 package org.openhab.habdroid.core;
 
 import android.content.Context;
@@ -35,15 +44,15 @@ public class NetworkConnectivityInfo implements Parcelable {
     };
 
     public static NetworkConnectivityInfo currentNetworkConnectivityInfo(Context ctx) {
-        ConnectivityManager connectivityManager = (ConnectivityManager)ctx.getSystemService(
+        ConnectivityManager connectivityManager = (ConnectivityManager) ctx.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkConnectivityInfo connectivityInfo = new NetworkConnectivityInfo();
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        if (activeNetworkInfo.isConnected()) {
+        if (activeNetworkInfo != null && activeNetworkInfo.isConnected()) {
             connectivityInfo.setNetworkType(activeNetworkInfo.getType());
             if (activeNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
                 // get ssid here
-                WifiManager wifiManager = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
+                WifiManager wifiManager = (WifiManager) ctx.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 WifiInfo wifiConnectionInfo = wifiManager.getConnectionInfo();
                 if (wifiConnectionInfo != null) {
                     connectivityInfo.setSsid(wifiConnectionInfo.getSSID());

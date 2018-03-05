@@ -1,85 +1,38 @@
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.4.0
- *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.openhab.habdroid.model;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.support.annotation.NonNull;
 
-public class OpenHABSitemap {
+public abstract class OpenHABSitemap implements Parcelable {
 	private String name;
     private String label;
 	private String link;
     private String icon;
 	private String homepageLink;
     private boolean leaf = false;
-	
-	public OpenHABSitemap(Node startNode) {
-		if (startNode.hasChildNodes()) {
-			NodeList childNodes = startNode.getChildNodes();
-			for (int i = 0; i < childNodes.getLength(); i ++) {
-				Node childNode = childNodes.item(i);
-				if (childNode.getNodeName().equals("name")) {
-					this.setName(childNode.getTextContent());
-                } else if (childNode.getNodeName().equals("label")) {
-                    this.setLabel(childNode.getTextContent());
-				} else if (childNode.getNodeName().equals("link")) {
-					this.setLink(childNode.getTextContent());
-                } else if (childNode.getNodeName().equals("icon")) {
-                    this.setIcon(childNode.getTextContent());
-				} else if (childNode.getNodeName().equals("homepage")) {
-					if (childNode.hasChildNodes()) {
-						NodeList homepageNodes = childNode.getChildNodes();
-						for (int j = 0; j < homepageNodes.getLength(); j++) {
-							Node homepageChildNode = homepageNodes.item(j);
-							if (homepageChildNode.getNodeName().equals("link")) {
-								this.setHomepageLink(homepageChildNode.getTextContent());
-							} else if (homepageChildNode.getNodeName().equals("leaf")) {
-                                if (homepageChildNode.getTextContent().equals("true")) {
-                                    setLeaf(true);
-                                } else {
-                                    setLeaf(false);
-                                }
-                            }
-						}
-					}
-				}
-			}
-		}
-	}
 
-    public OpenHABSitemap(JSONObject jsonObject) {
-        try {
-            if (jsonObject.has("name"))
-                this.setName(jsonObject.getString("name"));
-            if (jsonObject.has("label"))
-                this.setLabel(jsonObject.getString("label"));
-            if (jsonObject.has("link"))
-                this.setLink(jsonObject.getString("link"));
-            if (jsonObject.has("icon"))
-                this.setIcon(jsonObject.getString("icon"));
-            if (jsonObject.has("homepage")) {
-                JSONObject homepageObject = jsonObject.getJSONObject("homepage");
-                this.setHomepageLink(homepageObject.getString("link"));
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+    OpenHABSitemap(Parcel in) {
+        this.name = in.readString();
+        this.label = in.readString();
+        this.link = in.readString();
+        this.icon = in.readString();
+        this.homepageLink = in.readString();
     }
 
-	public String getName() {
+    protected OpenHABSitemap() {
+    }
+
+    public String getName() {
 		return name;
 	}
 	public void setName(String name) {
@@ -104,8 +57,8 @@ public class OpenHABSitemap {
         this.icon = icon;
     }
 
-    public String getLabel() {
-        return label;
+    public @NonNull String getLabel() {
+        return (label == null) ? getName() : label;
     }
 
     public void setLabel(String label) {
@@ -119,4 +72,21 @@ public class OpenHABSitemap {
     public void setLeaf(boolean isLeaf) {
         leaf = isLeaf;
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(name);
+        dest.writeString(label);
+        dest.writeString(link);
+        dest.writeString(icon);
+        dest.writeString(homepageLink);
+    }
+
+    public abstract String getIconPath();
+
 }

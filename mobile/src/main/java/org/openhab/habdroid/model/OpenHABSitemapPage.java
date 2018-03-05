@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
+ *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ */
+
 package org.openhab.habdroid.model;
 
 import org.json.JSONObject;
@@ -6,19 +15,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.util.ArrayList;
-
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.6.0
- *
- */
 
 public class OpenHABSitemapPage {
 
@@ -33,14 +29,14 @@ public class OpenHABSitemapPage {
         Node rootNode = document.getFirstChild();
         if (rootNode == null)
             return;
-        mRootWidget = new OpenHABWidget();
+        mRootWidget = new OpenHAB1Widget();
         mRootWidget.setType("root");
         if (rootNode.hasChildNodes()) {
             NodeList childNodes = rootNode.getChildNodes();
             for (int i = 0; i < childNodes.getLength(); i ++) {
                 Node childNode = childNodes.item(i);
                 if (childNode.getNodeName().equals("widget")) {
-                    OpenHABWidget newOpenHABWidget = new OpenHABWidget(mRootWidget, childNode);
+                    OpenHABWidget newOpenHABWidget = OpenHAB1Widget.createOpenHABWidgetFromNode(mRootWidget, childNode);
                     mWidgets.add(newOpenHABWidget);
                 } else if (childNode.getNodeName().equals("title")) {
                     this.setTitle(childNode.getTextContent());
@@ -57,7 +53,6 @@ public class OpenHABSitemapPage {
     }
 
     public OpenHABSitemapPage(JSONObject document) {
-
     }
 
     public ArrayList<OpenHABWidget> getWidgets() {

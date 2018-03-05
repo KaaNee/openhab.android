@@ -1,14 +1,10 @@
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.4.0
- *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.openhab.habdroid.util;
@@ -21,22 +17,19 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.ImageView;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
+
+import okhttp3.Authenticator;
+import okhttp3.Credentials;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.Route;
 
 public class MjpegStreamer {
 
-    private static final String TAG = "MjpegStreamer";
+    private static final String TAG = MjpegStreamer.class.getSimpleName();
     private String mSourceUrl;
     private String mUsername;
     private String mPassword;
@@ -91,35 +84,40 @@ public class MjpegStreamer {
             Message m = mHandler.obtainMessage(mId, mBitmap);
             m.sendToTarget();
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, e.getMessage(), e);
         }
     }
 
-    public InputStream httpRequest(String url, String usr, String pwd){
-        HttpResponse res = null;
-        DefaultHttpClient httpclient = new DefaultHttpClient();
-        CredentialsProvider credProvider = new BasicCredentialsProvider();
-        credProvider.setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
-                new UsernamePasswordCredentials(usr, pwd));
-        httpclient.setCredentialsProvider(credProvider);
-        Log.d(TAG, "1. Sending http request");
+    public InputStream httpRequest(String url, final String usr, final String pwd){
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        OkHttpClient client = new OkHttpClient.Builder()
+                .authenticator(new Authenticator() {
+                    @Override
+                    public Request authenticate(Route route, Response response) throws IOException {
+                        Log.d(TAG, "Authenticating for response: " + response);
+                        Log.d(TAG, "Challenges: " + response.challenges());
+                        // Get username/password from preferences
+                        String credential = Credentials.basic(usr, pwd);
+                        return response.request().newBuilder()
+                                .header("Authorization", credential)
+                                .build();
+                    }
+                })
+                .build();
+
         try {
-            res = httpclient.execute(new HttpGet(URI.create(url)));
-            Log.d(TAG, "2. Request finished, status = " + res.getStatusLine().getStatusCode());
-            if(res.getStatusLine().getStatusCode()==401){
+            Log.d(TAG, "1. Sending http request");
+            Response response = client.newCall(request).execute();
+            Log.d(TAG, "2. Request finished, status = " + response.code());
+            if (response.code()==401){
                 //You must turn off camera User Access Control before this will work
                 return null;
             }
-            Log.d(TAG, "content-type = " + res.getEntity().getContentType());
-            Log.d(TAG, "content-encoding = " + res.getEntity().getContentEncoding());
-            return res.getEntity().getContent();
-        } catch (ClientProtocolException e) {
-            e.printStackTrace();
-            Log.d(TAG, "Request failed-ClientProtocolException", e);
-            //Error connecting to camera
+            return response.body().byteStream();
         } catch (IOException e) {
-            e.printStackTrace();
-            Log.d(TAG, "Request failed-IOException", e);
+            Log.e(TAG, "Request failed-IOException", e);
             //Error connecting to camera
         }
 

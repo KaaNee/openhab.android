@@ -1,14 +1,10 @@
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.4.0
- *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.openhab.habdroid.ui;
@@ -17,31 +13,33 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.os.Bundle;
-import android.os.Handler;
-import android.support.v4.app.ListFragment;
+import android.preference.PreferenceManager;
+import android.support.annotation.ColorInt;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ListView;
 
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestHandle;
-import com.loopj.android.http.TextHttpResponseHandler;
-
-import org.apache.http.Header;
-import org.apache.http.message.BasicHeader;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.openhab.habdroid.R;
+import org.openhab.habdroid.core.connection.Connection;
 import org.openhab.habdroid.model.OpenHABItem;
 import org.openhab.habdroid.model.OpenHABNFCActionList;
 import org.openhab.habdroid.model.OpenHABWidget;
 import org.openhab.habdroid.model.OpenHABWidgetDataSource;
+import org.openhab.habdroid.util.MyAsyncHttpClient;
+import org.openhab.habdroid.util.MyHttpClient;
 import org.openhab.habdroid.util.Util;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -52,37 +50,37 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+
+import okhttp3.Call;
+import okhttp3.Headers;
+
+import static org.openhab.habdroid.core.message.MessageHandler.LOGLEVEL_ALWAYS;
+import static org.openhab.habdroid.core.message.MessageHandler.TYPE_SNACKBAR;
+import static org.openhab.habdroid.util.Constants.PREFERENCE_SWIPE_REFRESH_EXPLAINED;
 
 /**
  * This class is apps' main fragment which displays list of openHAB
  * widgets from sitemap page with further navigation through sitemap and everything else!
  */
 
-public class OpenHABWidgetListFragment extends ListFragment {
-    private static final String TAG = "OpenHABWidgetListFragment";
-    private OnWidgetSelectedListener widgetSelectedListener;
+public class OpenHABWidgetListFragment extends Fragment
+        implements OpenHABWidgetAdapter.ItemClickListener {
+    private static final String TAG = OpenHABWidgetListFragment.class.getSimpleName();
     // Datasource, providing list of openHAB widgets
     private OpenHABWidgetDataSource openHABWidgetDataSource;
     // List adapter for list view of openHAB widgets
     private OpenHABWidgetAdapter openHABWidgetAdapter;
-    // Url of current sitemap page displayed
+    private RecyclerView mRecyclerView;
+    private LinearLayoutManager mLayoutManager;
     // Url of current sitemap page displayed
     private String displayPageUrl;
-    // sitemap root url
-    private String sitemapRootUrl = "";
-    // openHAB base url
-    private String openHABBaseUrl = "https://demo.openhab.org:8443/";
-    // List of widgets to display
-    private ArrayList<OpenHABWidget> widgetList = new ArrayList<OpenHABWidget>();
-    // Username/password for authentication
-    private String openHABUsername = "";
-    private String openHABPassword = "";
     // selected openhab widget
     private OpenHABWidget selectedOpenHABWidget;
     // widget Id which we got from nfc tag
@@ -93,49 +91,30 @@ public class OpenHABWidgetListFragment extends ListFragment {
     private boolean nfcAutoClose = false;
     // parent activity
     private OpenHABMainActivity mActivity;
-    // loopj
-    private AsyncHttpClient mAsyncHttpClient;
     // Am I visible?
     private boolean mIsVisible = false;
-    private OpenHABWidgetListFragment mTag;
-    private int mCurrentSelectedItem = -1;
     private int mPosition;
-    private int mOldSelectedItem = -1;
+    private String mTitle;
     private String mAtmosphereTrackingId;
-    //handlers will reconnect the network during outages
-    private Handler networkHandler = new Handler();
-    private Runnable networkRunnable;
     // keeps track of current request to cancel it in onPause
-    private RequestHandle mRequestHanle;
+    private Call mRequestHandle;
+    private SwipeRefreshLayout refreshLayout;
+    private Connection mConnection;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate()");
         Log.d(TAG, "isAdded = " + isAdded());
-        mTag = this;
         super.onCreate(savedInstanceState);
-        if (savedInstanceState != null) {
-            Log.d(TAG, "restoring state from savedInstanceState");
-            displayPageUrl = savedInstanceState.getString("displayPageUrl");
-            openHABBaseUrl = savedInstanceState.getString("openHABBaseUrl");
-            sitemapRootUrl = savedInstanceState.getString("sitemapRootUrl");
-            openHABUsername = savedInstanceState.getString("openHABUsername");
-            openHABPassword = savedInstanceState.getString("openHABPassword");
-            mCurrentSelectedItem = savedInstanceState.getInt("currentSelectedItem", -1);
-            mPosition = savedInstanceState.getInt("position", -1);
-            Log.d(TAG, String.format("onCreate selected item = %d", mCurrentSelectedItem));
-        }
+
         if (getArguments() != null) {
             displayPageUrl = getArguments().getString("displayPageUrl");
-            openHABBaseUrl = getArguments().getString("openHABBaseUrl");
-            sitemapRootUrl = getArguments().getString("sitemapRootUrl");
-            openHABUsername = getArguments().getString("openHABUsername");
-            openHABPassword = getArguments().getString("openHABPassword");
             mPosition = getArguments().getInt("position");
+            mTitle = getArguments().getString("title");
         }
-        if (savedInstanceState != null)
-            if (!displayPageUrl.equals(savedInstanceState.getString("displayPageUrl")))
-                mCurrentSelectedItem = -1;
+        if (savedInstanceState != null) {
+            mTitle = savedInstanceState.getString("title");
+        }
     }
 
     @Override
@@ -143,96 +122,131 @@ public class OpenHABWidgetListFragment extends ListFragment {
         super.onActivityCreated(savedInstanceState);
         Log.d(TAG, "onActivityCreated()");
         Log.d(TAG, "isAdded = " + isAdded());
-        mActivity = (OpenHABMainActivity)getActivity();
-        openHABWidgetDataSource = new OpenHABWidgetDataSource();
-        openHABWidgetAdapter = new OpenHABWidgetAdapter(getActivity(),
-                R.layout.openhabwidgetlist_genericitem, widgetList);
-        getListView().setAdapter(openHABWidgetAdapter);
-        openHABBaseUrl = mActivity.getOpenHABBaseUrl();
-        openHABUsername = mActivity.getOpenHABUsername();
-        openHABPassword = mActivity.getOpenHABPassword();
-        openHABWidgetAdapter.setOpenHABUsername(openHABUsername);
-        openHABWidgetAdapter.setOpenHABPassword(openHABPassword);
-        openHABWidgetAdapter.setOpenHABBaseUrl(openHABBaseUrl);
-        openHABWidgetAdapter.setAsyncHttpClient(mAsyncHttpClient);
-        getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View view, int position,
-                                    long id) {
-                Log.d(TAG, "Widget clicked " + String.valueOf(position));
-                OpenHABWidget openHABWidget = openHABWidgetAdapter.getItem(position);
-                if (openHABWidget.hasLinkedPage()) {
-                    // Widget have a page linked to it
-                    String[] splitString;
-                    splitString = openHABWidget.getLinkedPage().getTitle().split("\\[|\\]");
-                    if (OpenHABWidgetListFragment.this.widgetSelectedListener != null) {
-                        widgetSelectedListener.onWidgetSelectedListener(openHABWidget.getLinkedPage(),
-                                OpenHABWidgetListFragment.this);
-                    }
-//                        navigateToPage(openHABWidget.getLinkedPage().getLink(), splitString[0]);
-                    mOldSelectedItem = position;
-                } else {
-                    Log.d(TAG, String.format("Click on item with no linked page, reverting selection to item %d", mOldSelectedItem));
-                    // If an item without a linked page is clicked this will clear the selection
-                    // and revert it to previously selected item (if any) when CHOICE_MODE_SINGLE
-                    // is switched on for widget listview in multi-column mode on tablets
-                    getListView().clearChoices();
-                    getListView().requestLayout();
-                    getListView().setItemChecked(mOldSelectedItem, true);
-                }
-            }
+        mActivity = (OpenHABMainActivity) getActivity();
+        mConnection = mActivity.getConnection();
+        final String iconFormat = getIconFormat();
+        openHABWidgetDataSource = new OpenHABWidgetDataSource(iconFormat);
 
-        });
-        getListView().setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            public boolean onItemLongClick(AdapterView<?> parent, View view,
-                                           int position, long id) {
-                Log.d(TAG, "Widget long-clicked " + String.valueOf(position));
-                OpenHABWidget openHABWidget = openHABWidgetAdapter.getItem(position);
-                Log.d(TAG, "Widget type = " + openHABWidget.getType());
-                if (openHABWidget.getType().equals("Switch") || openHABWidget.getType().equals("Selection") ||
-                        openHABWidget.getType().equals("Colorpicker")) {
-                    selectedOpenHABWidget = openHABWidget;
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-                    builder.setTitle(R.string.nfc_dialog_title);
-                    OpenHABNFCActionList nfcActionList = new OpenHABNFCActionList(selectedOpenHABWidget);
-                    builder.setItems(nfcActionList.getNames(), new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            Intent writeTagIntent = new Intent(getActivity().getApplicationContext(),
-                                    OpenHABWriteTagActivity.class);
-                            writeTagIntent.putExtra("sitemapPage", displayPageUrl);
-                            writeTagIntent.putExtra("item", selectedOpenHABWidget.getItem().getName());
-                            writeTagIntent.putExtra("itemType", selectedOpenHABWidget.getItem().getType());
-                            OpenHABNFCActionList nfcActionList =
-                                    new OpenHABNFCActionList(selectedOpenHABWidget);
-                            writeTagIntent.putExtra("command", nfcActionList.getCommands()[which]);
-                            startActivityForResult(writeTagIntent, 0);
-                            Util.overridePendingTransition(getActivity(), false);
-                            selectedOpenHABWidget = null;
-                        }
-                    });
-                    builder.show();
-                    return true;
+        // We're using atmosphere so create an own client to not block the others
+        SharedPreferences prefs = PreferenceManager
+                .getDefaultSharedPreferences(mActivity);
+
+        openHABWidgetAdapter = new OpenHABWidgetAdapter(getActivity(), this,
+                getResources().getInteger(R.integer.pager_columns) > 1, mConnection);
+
+        if (savedInstanceState != null) {
+            openHABWidgetAdapter.setSelectedPosition(savedInstanceState.getInt("selection", -1));
+        }
+        mLayoutManager = new LinearLayoutManager(mActivity);
+        mLayoutManager.setRecycleChildrenOnDetach(true);
+
+        mRecyclerView.setRecycledViewPool(mActivity.getViewPool());
+        mRecyclerView.addItemDecoration(new OpenHABWidgetAdapter.WidgetItemDecoration(mActivity));
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.setAdapter(openHABWidgetAdapter);
+
+
+        refreshLayout = getView().findViewById(R.id.swiperefresh);
+        if (refreshLayout == null) {
+            return;
+        }
+
+        TypedValue typedValue = new TypedValue();
+        Resources.Theme theme = getActivity().getTheme();
+
+        theme.resolveAttribute(R.attr.colorPrimary, typedValue, true);
+        @ColorInt int colorPrimary = typedValue.data;
+
+        theme.resolveAttribute(R.attr.colorAccent, typedValue, true);
+        @ColorInt int colorAccent = typedValue.data;
+
+        refreshLayout.setColorSchemeColors(colorPrimary, colorAccent);
+        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                if (shouldShowSwipeToRefreshDescriptionSnackbar()) {
+                    showSwipeToRefreshDescriptionSnackbar();
                 }
-                return true;
+                if (displayPageUrl != null) {
+                    showPage(displayPageUrl, false);
+                }
             }
         });
-        if (getResources().getInteger(R.integer.pager_columns) > 1) {
-            Log.d(TAG, "More then 1 column, setting selector on");
-            getListView().setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-        }
+
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        Log.d(TAG, "onAttach()");
-        Log.d(TAG, "isAdded = " + isAdded());
-        if (activity instanceof OnWidgetSelectedListener) {
-            widgetSelectedListener = (OnWidgetSelectedListener)activity;
-            mActivity = (OpenHABMainActivity)activity;
-            mAsyncHttpClient = mActivity.getAsyncHttpClient();
-        } else {
-            Log.e("TAG", "Attached to incompatible activity");
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("title", mTitle);
+        outState.putInt("selection", openHABWidgetAdapter.getSelectedPosition());
+    }
+
+    @Override
+    public boolean onItemClicked(OpenHABWidget openHABWidget) {
+        if (!openHABWidget.hasLinkedPage()) {
+            return false;
         }
+
+        // Widget have a page linked to it
+        if (mActivity != null) {
+            mActivity.onWidgetSelected(openHABWidget.getLinkedPage(), OpenHABWidgetListFragment.this);
+        }
+        return true;
+    }
+
+    @Override
+    public void onItemLongClicked(OpenHABWidget openHABWidget) {
+        Log.d(TAG, "Widget type = " + openHABWidget.getType());
+
+        selectedOpenHABWidget = openHABWidget;
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle(R.string.nfc_dialog_title);
+        final OpenHABNFCActionList nfcActionList = new OpenHABNFCActionList
+                (selectedOpenHABWidget, getContext());
+        builder.setItems(nfcActionList.getNames(), new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                Intent writeTagIntent = new Intent(getActivity().getApplicationContext(),
+                        OpenHABWriteTagActivity.class);
+                writeTagIntent.putExtra("sitemapPage", displayPageUrl);
+
+                if (nfcActionList.getCommands().length > which) {
+                    writeTagIntent.putExtra("item", selectedOpenHABWidget.getItem().getName());
+                    writeTagIntent.putExtra("itemType", selectedOpenHABWidget.getItem().getType());
+                    writeTagIntent.putExtra("command", nfcActionList.getCommands()[which]);
+                }
+                startActivityForResult(writeTagIntent, 0);
+                Util.overridePendingTransition(getActivity(), false);
+                selectedOpenHABWidget = null;
+            }
+        });
+        builder.show();
+    }
+
+    private void showSwipeToRefreshDescriptionSnackbar() {
+        mActivity.getMessageHandler().showMessageToUser(
+                getString(R.string.swipe_to_refresh_description),
+                TYPE_SNACKBAR, LOGLEVEL_ALWAYS,
+                R.string.swipe_to_refresh_dismiss, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        PreferenceManager
+                                .getDefaultSharedPreferences(v.getContext())
+                                .edit()
+                                .putBoolean(PREFERENCE_SWIPE_REFRESH_EXPLAINED, true)
+                                .apply();
+                    }
+                });
+    }
+
+    private boolean shouldShowSwipeToRefreshDescriptionSnackbar() {
+        return !PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean
+                (PREFERENCE_SWIPE_REFRESH_EXPLAINED, false);
+    }
+
+    @NonNull
+    private String getIconFormat() {
+        return PreferenceManager.getDefaultSharedPreferences(mActivity).getString("iconFormatType","PNG");
     }
 
     @Override
@@ -249,6 +263,7 @@ public class OpenHABWidgetListFragment extends ListFragment {
         Log.d(TAG, "onViewCreated");
         Log.d(TAG, "isAdded = " + isAdded());
         super.onViewCreated(view, savedInstanceState);
+        mRecyclerView = view.findViewById(R.id.recyclerview);
     }
 
     @Override
@@ -261,16 +276,16 @@ public class OpenHABWidgetListFragment extends ListFragment {
         Thread thread = new Thread(new Runnable(){
             @Override
             public void run(){
-                mRequestHanle.cancel(true);
+                if (mRequestHandle != null) {
+                    mRequestHandle.cancel();
+                    mRequestHandle = null;
+                }
             }
         });
         thread.start();
         if (openHABWidgetAdapter != null) {
-            openHABWidgetAdapter.stopImageRefresh();
-            openHABWidgetAdapter.stopVideoWidgets();
+            stopVisibleViewHolders();
         }
-        if (isAdded())
-            mCurrentSelectedItem = getListView().getCheckedItemPosition();
     }
 
     @Override
@@ -278,23 +293,8 @@ public class OpenHABWidgetListFragment extends ListFragment {
         super.onResume();
         Log.d(TAG, "onResume() " + displayPageUrl);
         Log.d(TAG, "isAdded = " + isAdded());
-        if (displayPageUrl != null)
+        if (displayPageUrl != null && mConnection != null)
             showPage(displayPageUrl, false);
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        Log.d(TAG, "onSaveInstanceState");
-        Log.d(TAG, "isAdded = " + isAdded());
-        Log.d(TAG, String.format("onSave current selected item = %d", getListView().getCheckedItemPosition()));
-        savedInstanceState.putString("displayPageUrl", displayPageUrl);
-        savedInstanceState.putString("openHABBaseUrl", openHABBaseUrl);
-        savedInstanceState.putString("sitemapRootUrl", sitemapRootUrl);
-        savedInstanceState.putString("openHABUsername", openHABUsername);
-        savedInstanceState.putString("openHABPassword", openHABPassword);
-        savedInstanceState.putInt("currentSelectedItem", getListView().getCheckedItemPosition());
-        savedInstanceState.putInt("position", mPosition);
-        super.onSaveInstanceState(savedInstanceState);
     }
 
     @Override
@@ -304,16 +304,13 @@ public class OpenHABWidgetListFragment extends ListFragment {
         Log.d(TAG, String.format("isVisibleToUser(%B)", isVisibleToUser));
     }
 
-    public static OpenHABWidgetListFragment withPage(String pageUrl, String baseUrl, String rootUrl,
-                                                     String username, String password, int position) {
+    public static OpenHABWidgetListFragment withPage(String pageUrl, String pageTitle,
+                                                     int position) {
         Log.d(TAG, "withPage(" + pageUrl + ")");
         OpenHABWidgetListFragment fragment = new OpenHABWidgetListFragment();
         Bundle args = new Bundle();
         args.putString("displayPageUrl", pageUrl);
-        args.putString("openHABBaseUrl", baseUrl);
-        args.putString("sitemapRootUrl", rootUrl);
-        args.putString("openHABUsername", username);
-        args.putString("openHABPassword", password);
+        args.putString("title", pageTitle);
         args.putInt("position", position);
         fragment.setArguments(args);
         return fragment;
@@ -330,27 +327,40 @@ public class OpenHABWidgetListFragment extends ListFragment {
         Log.i(TAG, " showPage for " + pageUrl + " longPolling = " + longPolling);
         Log.d(TAG, "isAdded = " + isAdded());
         // Cancel any existing http request to openHAB (typically ongoing long poll)
-        if (!longPolling)
+        if (mRequestHandle != null) {
+            mRequestHandle.cancel();
+            mRequestHandle = null;
+        }
+        if (!longPolling) {
             startProgressIndicator();
-        List<BasicHeader> headers = new LinkedList<BasicHeader>();
-        if (mActivity.getOpenHABVersion() == 1)
-            headers.add(new BasicHeader("Accept", "application/xml"));
-        headers.add(new BasicHeader("X-Atmosphere-Framework", "1.0"));
+            this.mAtmosphereTrackingId = null;
+        }
+        Map<String, String> headers = new HashMap<String, String>();
+        if (mActivity.getOpenHABVersion() == 1) {
+            headers.put("Accept", "application/xml");
+        }
+
+        MyAsyncHttpClient asyncHttpClient = mConnection.getAsyncHttpClient();
+        headers.put("X-Atmosphere-Framework", "1.0");
         if (longPolling) {
-            mAsyncHttpClient.setTimeout(300000);
-            headers.add(new BasicHeader("X-Atmosphere-Transport", "long-polling"));
+            asyncHttpClient.setTimeout(300000);
+            headers.put("X-Atmosphere-Transport", "long-polling");
             if (this.mAtmosphereTrackingId == null) {
-                headers.add(new BasicHeader("X-Atmosphere-tracking-id", "0"));
+                headers.put("X-Atmosphere-tracking-id", "0");
             } else {
-                headers.add(new BasicHeader("X-Atmosphere-tracking-id", this.mAtmosphereTrackingId));
+                headers.put("X-Atmosphere-tracking-id", this.mAtmosphereTrackingId);
             }
         } else {
-            headers.add(new BasicHeader("X-Atmosphere-tracking-id", "0"));
-            mAsyncHttpClient.setTimeout(10000);
+            headers.put("X-Atmosphere-tracking-id", "0");
+            asyncHttpClient.setTimeout(10000);
         }
-        mRequestHanle = mAsyncHttpClient.get(mActivity, pageUrl, headers.toArray(new BasicHeader[] {}), null, new AsyncHttpResponseHandler() {
+        mRequestHandle = asyncHttpClient.get(pageUrl, headers, new MyHttpClient.ResponseHandler() {
                     @Override
-                    public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                    public void onFailure(Call call, int statusCode, Headers headers, byte[] responseBody, Throwable error) {
+                        if (call.isCanceled()) {
+                            Log.i(TAG, "Call canceled on failure - stop updating");
+                            return;
+                        }
                         mAtmosphereTrackingId = null;
                         if (!longPolling)
                             stopProgressIndicator();
@@ -363,9 +373,10 @@ public class OpenHABWidgetListFragment extends ListFragment {
                     * If we get a network error try connecting again, if the
                     * fragment is paused, the runnable will be removed
                     */
-                            Log.e(TAG, error.getClass().toString());
+                            Log.e(TAG, error.toString());
                             Log.e(TAG, String.format("status code = %d", statusCode));
                             Log.e(TAG, "Connection error = " + error.getClass().toString() + ", cycle aborted");
+
 //                            networkHandler.removeCallbacks(networkRunnable);
 //                            networkRunnable =  new Runnable(){
 //                                @Override
@@ -378,18 +389,20 @@ public class OpenHABWidgetListFragment extends ListFragment {
                     }
 
                     @Override
-                    public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                        for (int i=0; i<headers.length; i++) {
-                            if (headers[i].getName().equalsIgnoreCase("X-Atmosphere-tracking-id")) {
-                                Log.i(TAG, "Found atmosphere tracking id: " + headers[i].getValue());
-                                OpenHABWidgetListFragment.this.mAtmosphereTrackingId = headers[i].getValue();
-                            }
+                    public void onSuccess(Call call, int statusCode, Headers headers, byte[] responseBody) {
+                        if (call.isCanceled()) {
+                            Log.i(TAG, "Call canceled on success - stop updating");
+                            return;
+                        }
+                        String id = headers.get("X-Atmosphere-tracking-id");
+                        if (id != null) {
+                            Log.i(TAG, "Found atmosphere tracking id: " + id);
+                            OpenHABWidgetListFragment.this.mAtmosphereTrackingId = id;
                         }
                         if (!longPolling)
                             stopProgressIndicator();
                         String responseString = new String(responseBody);
                         processContent(responseString, longPolling);
-                        Log.d(TAG, responseString);
                     }
                 });
     }
@@ -397,17 +410,24 @@ public class OpenHABWidgetListFragment extends ListFragment {
     /**
      * Parse XML sitemap page and show it
      *
-     * @param  document	XML Document
+     *
      * @return      void
      */
     public void processContent(String responseString, boolean longPolling) {
-        // As we change the page we need to stop all videos on current page
-        // before going to the new page. This is quite dirty, but is the only
-        // way to do that...
+
         Log.d(TAG, "processContent() " + this.displayPageUrl);
         Log.d(TAG, "isAdded = " + isAdded());
-        openHABWidgetAdapter.stopVideoWidgets();
-        openHABWidgetAdapter.stopImageRefresh();
+        Log.d(TAG, "responseString.length() = " + (responseString != null ? responseString.length()  : -1));
+
+        // We can receive empty response, probably when no items was changed
+        // so we needn't process it
+        if (responseString == null || responseString.length() == 0) {
+            showPage(displayPageUrl, true);
+            return;
+        }
+
+        List<OpenHABWidget> widgetList = new ArrayList<>();
+
         // If openHAB verion = 1 get page from XML
         if (mActivity.getOpenHABVersion() == 1) {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -428,17 +448,22 @@ public class OpenHABWidgetListFragment extends ListFragment {
                     Log.e(TAG, "Got a null response from openHAB");
                     showPage(displayPageUrl, false);
                 }
-            } catch (ParserConfigurationException e) {
-                e.printStackTrace();
-            } catch (SAXException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (ParserConfigurationException | SAXException | IOException e) {
+                    Log.d(TAG, "responseString:\n" + String.valueOf(responseString));
+                    Log.e(TAG, e.getMessage(), e);
             }
             // Later versions work with JSON
         } else {
             try {
                 JSONObject pageJson = new JSONObject(responseString);
+                // In case of a server timeout in the long polling request, nothing is done
+                // and the request is restarted
+                if (longPolling && pageJson.has("timeout")
+                        && pageJson.getString("timeout").equalsIgnoreCase("true")) {
+                    Log.e(TAG, "Server timeout in the long polling request");
+                    showPage(displayPageUrl, true);
+                    return;
+                }
                 openHABWidgetDataSource.setSourceJson(pageJson);
                 widgetList.clear();
                 for (OpenHABWidget w : openHABWidgetDataSource.getWidgets()) {
@@ -448,20 +473,15 @@ public class OpenHABWidgetListFragment extends ListFragment {
                     widgetList.add(w);
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.d(TAG, e.getMessage(), e);
             }
         }
 
-        openHABWidgetAdapter.notifyDataSetChanged();
-        if (!longPolling && isAdded()) {
-            getListView().clearChoices();
-            Log.d(TAG, String.format("processContent selectedItem = %d", mCurrentSelectedItem));
-            if (mCurrentSelectedItem >= 0)
-                getListView().setItemChecked(mCurrentSelectedItem, true);
+        openHABWidgetAdapter.update(widgetList);
+        mTitle = openHABWidgetDataSource.getTitle();
+        if (mActivity != null && mIsVisible) {
+            mActivity.updateTitle();
         }
-        if (getActivity() != null && mIsVisible)
-            getActivity().setTitle(openHABWidgetDataSource.getTitle());
-//            }
         // Set widget list index to saved or zero position
         // This would mean we got widget and command from nfc tag, so we need to do some automatic actions!
         if (this.nfcWidgetId != null && this.nfcCommand != null) {
@@ -471,20 +491,22 @@ public class OpenHABWidgetListFragment extends ListFragment {
             // Found widget with id from nfc tag and it has an item
             if (nfcWidget != null && nfcItem != null) {
                 // TODO: Perform nfc widget action here
+                MyAsyncHttpClient client = mConnection.getAsyncHttpClient();
                 if (this.nfcCommand.equals("TOGGLE")) {
-                    if (nfcItem.getType().equals("RollershutterItem")) {
+                    //RollerShutterItem changed to RollerShutter in later builds of OH2
+                    if (nfcItem.getType().startsWith("Rollershutter")) {
                         if (nfcItem.getStateAsBoolean())
-                            this.openHABWidgetAdapter.sendItemCommand(nfcItem, "UP");
+                            Util.sendItemCommand(client, nfcItem, "UP");
                         else
-                            this.openHABWidgetAdapter.sendItemCommand(nfcItem, "DOWN");
+                            Util.sendItemCommand(client, nfcItem, "DOWN");
                     } else {
                         if (nfcItem.getStateAsBoolean())
-                            this.openHABWidgetAdapter.sendItemCommand(nfcItem, "OFF");
+                            Util.sendItemCommand(client, nfcItem, "OFF");
                         else
-                            this.openHABWidgetAdapter.sendItemCommand(nfcItem, "ON");
+                            Util.sendItemCommand(client, nfcItem, "ON");
                     }
                 } else {
-                    this.openHABWidgetAdapter.sendItemCommand(nfcItem, this.nfcCommand);
+                    Util.sendItemCommand(client, nfcItem, this.nfcCommand);
                 }
             }
             this.nfcWidgetId = null;
@@ -493,45 +515,26 @@ public class OpenHABWidgetListFragment extends ListFragment {
                 getActivity().finish();
             }
         }
-        if (longPolling)
-            showPage(displayPageUrl, false);
-        else
-            showPage(displayPageUrl, true);
+
+        showPage(displayPageUrl, true);
     }
 
     private void stopProgressIndicator() {
-        if (mActivity != null)
+        if (mActivity != null) {
             Log.d(TAG, "Stop progress indicator");
-            mActivity.stopProgressIndicator();
+            mActivity.setProgressIndicatorVisible(false);
+        }
+        if (refreshLayout != null)
+            refreshLayout.setRefreshing(false);
     }
 
     private void startProgressIndicator() {
-        if (mActivity != null)
+        boolean swipeAlreadyLoading = refreshLayout != null && refreshLayout.isRefreshing();
+
+        if (mActivity != null && !swipeAlreadyLoading) {
             Log.d(TAG, "Start progress indicator");
-            mActivity.startProgressIndicator();
-    }
-
-    private void showAlertDialog(String alertMessage) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setMessage(alertMessage)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                    }
-                });
-        AlertDialog alert = builder.create();
-        alert.show();
-    }
-
-    public void setOpenHABUsername(String openHABUsername) {
-        this.openHABUsername = openHABUsername;
-    }
-
-    public void setOpenHABPassword(String openHABPassword) {
-        this.openHABPassword = openHABPassword;
-    }
-
-    public void setDisplayPageUrl(String displayPageUrl) {
-        this.displayPageUrl = displayPageUrl;
+            mActivity.setProgressIndicatorVisible(true);
+        }
     }
 
     public String getDisplayPageUrl() {
@@ -539,18 +542,14 @@ public class OpenHABWidgetListFragment extends ListFragment {
     }
 
     public String getTitle() {
-        Log.d(TAG, "getPageTitle()");
-        if (openHABWidgetDataSource != null)
-            return openHABWidgetDataSource.getTitle();
-        return "";
+        return mTitle;
     }
 
     public void clearSelection() {
         Log.d(TAG, "clearSelection() " + this.displayPageUrl);
         Log.d(TAG, "isAdded = " + isAdded());
-        if (getListView() != null && this.isVisible() && isAdded()) {
-            getListView().clearChoices();
-            getListView().requestLayout();
+        if (openHABWidgetAdapter != null) {
+            openHABWidgetAdapter.setSelectedPosition(-1);
         }
     }
 
@@ -558,4 +557,15 @@ public class OpenHABWidgetListFragment extends ListFragment {
         return mPosition;
     }
 
+    private void stopVisibleViewHolders() {
+        final int firstVisibleItemPosition = mLayoutManager.findFirstVisibleItemPosition();
+        final int lastVisibleItemPosition = mLayoutManager.findLastVisibleItemPosition();
+        for (int i = firstVisibleItemPosition; i <= lastVisibleItemPosition; ++i) {
+            OpenHABWidgetAdapter.ViewHolder holder =
+                    (OpenHABWidgetAdapter.ViewHolder) mRecyclerView.findViewHolderForAdapterPosition(i);
+            if (holder != null) {
+                holder.stop();
+            }
+        }
+    }
 }

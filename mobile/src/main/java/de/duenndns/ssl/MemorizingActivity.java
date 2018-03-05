@@ -24,16 +24,16 @@
 package de.duenndns.ssl;
 
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
-public class MemorizingActivity extends Activity
+public class MemorizingActivity extends AppCompatActivity
 		implements OnClickListener,OnCancelListener {
 	final static String TAG = "MemorizingActivity";
 
@@ -112,16 +112,8 @@ public class MemorizingActivity extends Activity
 		    }
 		    if(desireClass != null)
 		        id = desireClass.getField(name).getInt(desireClass);
-		} catch (ClassNotFoundException e) {
-		    e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-		    e.printStackTrace();
-		} catch (SecurityException e) {
-		    e.printStackTrace();
-		} catch (IllegalAccessException e) {
-		    e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-		    e.printStackTrace();
+		} catch (ClassNotFoundException | IllegalArgumentException | SecurityException | IllegalAccessException | NoSuchFieldException e) {
+		    Log.e(TAG, e.getMessage(), e);
 		}
 		return id;
 	}

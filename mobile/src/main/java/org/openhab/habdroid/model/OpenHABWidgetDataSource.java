@@ -1,14 +1,10 @@
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.4.0
- *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.openhab.habdroid.model;
@@ -29,37 +25,30 @@ import java.util.ArrayList;
  */
 
 public class OpenHABWidgetDataSource {
-	private static final String TAG = "OpenHABWidgetDataSource";
+	private static final String TAG = OpenHABWidgetDataSource.class.getSimpleName();
+	private final String iconFormat;
 	private OpenHABWidget rootWidget;
 	private String title;
 	private String id;
 	private String icon;
 	private String link;
 
-	public OpenHABWidgetDataSource() {
-		
+	public OpenHABWidgetDataSource(String iconFormat) {
+		this.iconFormat = iconFormat;
 	}
-	
-	public OpenHABWidgetDataSource(Node rootNode) {
-		setSourceNode(rootNode);
-	}
-
-    public OpenHABWidgetDataSource(JSONObject jsonObject) {
-        setSourceJson(jsonObject);
-    }
 
 	public void setSourceNode(Node rootNode) {
 		Log.i(TAG, "Loading new data");
         if (rootNode == null)
             return;
-		rootWidget = new OpenHABWidget();
+		rootWidget = new OpenHAB1Widget();
 		rootWidget.setType("root");
 		if (rootNode.hasChildNodes()) {
 			NodeList childNodes = rootNode.getChildNodes();
 			for (int i = 0; i < childNodes.getLength(); i ++) {
 				Node childNode = childNodes.item(i);
 				if (childNode.getNodeName().equals("widget")) {
-					new OpenHABWidget(rootWidget, childNode);
+					OpenHAB1Widget.createOpenHABWidgetFromNode(rootWidget, childNode);
 				} else if (childNode.getNodeName().equals("title")) {
 					this.setTitle(childNode.getTextContent());
 				} else if (childNode.getNodeName().equals("id")) {
@@ -77,14 +66,14 @@ public class OpenHABWidgetDataSource {
         Log.d(TAG, jsonObject.toString());
         if (!jsonObject.has("widgets"))
             return;
-        rootWidget = new OpenHABWidget();
+        rootWidget = new OpenHAB2Widget();
         rootWidget.setType("root");
         try {
             JSONArray jsonWidgetArray = jsonObject.getJSONArray("widgets");
             for (int i=0; i<jsonWidgetArray.length(); i++) {
                 JSONObject widgetJson = jsonWidgetArray.getJSONObject(i);
-                Log.d(TAG, widgetJson.toString());
-                new OpenHABWidget(rootWidget, widgetJson);
+                // Log.d(TAG, widgetJson.toString());
+                OpenHAB2Widget.createOpenHABWidgetFromJson(rootWidget, widgetJson, iconFormat);
             }
             if (jsonObject.has("title"))
                 this.setTitle(jsonObject.getString("title"));
@@ -95,7 +84,7 @@ public class OpenHABWidgetDataSource {
             if (jsonObject.has("link"))
                 this.setLink(jsonObject.getString("link"));
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.d(TAG, e.getMessage(), e);
         }
     }
 	

@@ -1,14 +1,10 @@
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.4.0
- *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.openhab.habdroid.ui;
@@ -19,34 +15,29 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 
+import org.openhab.habdroid.model.OpenHABLinkedPage;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter implements ViewPager.OnPageChangeListener {
 
-    private static final String TAG = "OpenHABFragmentPagerAdapter";
-    private List<OpenHABWidgetListFragment> fragmentList;
+    private static final String TAG = OpenHABFragmentPagerAdapter.class.getSimpleName();
+    private List<Fragment> fragmentList = new ArrayList<>();
     private FragmentManager fragmentManager;
     private boolean notifyDataSetChangedPending = false;
     private int columnsNumber = 1;
-    private String openHABBaseUrl;
     private String sitemapRootUrl;
-    private String openHABUsername;
-    private String openHABPassword;
-    private boolean actualColumnCountChanged = false;
     private int mSelectedPage;
 
     public OpenHABFragmentPagerAdapter(FragmentManager fm) {
         super(fm);
         fragmentManager = fm;
-        fragmentList = new ArrayList<OpenHABWidgetListFragment>(0);
     }
 
     @Override
     public Fragment getItem(int position) {
         Log.d(TAG, String.format("getItem(%d)", position));
-//        OpenHABWidgetListFragment fragment = fragmentList.get(position);
-//        return fragment;
         return fragmentList.get(position);
     }
 
@@ -65,11 +56,11 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
         }
     }
 
-    public List<OpenHABWidgetListFragment> getFragmentList() {
+    public List<Fragment> getFragmentList() {
         return fragmentList;
     }
 
-    public void setFragmentList(List<OpenHABWidgetListFragment>fragments) {
+    public void setFragmentList(List<Fragment>fragments) {
         fragmentList = fragments;
         notifyDataSetChanged();
     }
@@ -79,7 +70,7 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
         notifyDataSetChanged();
     }
 
-    public OpenHABWidgetListFragment getFragment(int position) {
+    public Fragment getFragment(int position) {
         if (position < fragmentList.size()) {
             return fragmentList.get(position);
         }
@@ -88,9 +79,10 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
 
     public int getPositionByUrl(String pageUrl) {
         for (int i = 0; i < fragmentList.size(); i++) {
-            if (fragmentList.get(i).getDisplayPageUrl().equals(pageUrl)) {
-                return i;
-            }
+            if (fragmentList.get(i) instanceof OpenHABWidgetListFragment)
+                if (((OpenHABWidgetListFragment)fragmentList.get(i)).getDisplayPageUrl().equals(pageUrl)) {
+                    return i;
+                }
         }
         return -1;
     }
@@ -120,22 +112,56 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
     }
 
     public int getActualColumnsNumber() {
-        if (mSelectedPage + 1 < columnsNumber && fragmentList.size() > 0) {
-            return fragmentList.size();
+        if (fragmentList.size() > 0) {
+            if (fragmentList.get(fragmentList.size() - 1) instanceof OpenHABWidgetListFragment) {
+                if (mSelectedPage + 1 < columnsNumber && fragmentList.size() > 0) {
+                    return fragmentList.size();
+                }
+                return columnsNumber;
+            } else {
+                return 1;
+            }
         }
         return columnsNumber;
     }
 
-    public void openPage(String pageUrl) {
+    /**
+     * This method assumes, that a remote URL (altUrl) is set and always uses this one, instead
+     * of the currently used URL to connect to openHAB. Notifications are always handled in the
+     * remote url, if there's any. However, the caller of this method must ensure, that this
+     * method is not called, when no openHAB remote URL is set.
+     */
+    public void openNotifications() {
+        if (fragmentList.size() > 0) {
+            if (!(fragmentList.get(fragmentList.size() - 1) instanceof OpenHABNotificationFragment)) {
+                removeLastFragmentIfNotWidgetList();
+                OpenHABNotificationFragment fragment = getNewNotificationFragment();
+                fragmentList.add(fragment);
+                notifyDataSetChanged();
+            } else {
+                ((OpenHABNotificationFragment) fragmentList.get(fragmentList.size() - 1)).refresh();
+            }
+        } else {
+            OpenHABNotificationFragment fragment = getNewNotificationFragment();
+            fragmentList.add(fragment);
+            notifyDataSetChanged();
+        }
+    }
+
+    private OpenHABNotificationFragment getNewNotificationFragment() {
+        return OpenHABNotificationFragment.newInstance();
+    }
+
+    public void openPage(String pageUrl, String pageTitle) {
         Log.d(TAG, "openPage(" + pageUrl + ")");
-        OpenHABWidgetListFragment fragment = OpenHABWidgetListFragment.withPage(pageUrl, openHABBaseUrl,
-                sitemapRootUrl, openHABUsername, openHABPassword, fragmentList.size());
+        OpenHABWidgetListFragment fragment = OpenHABWidgetListFragment.withPage(pageUrl, pageTitle,
+                fragmentList.size());
         fragmentList.add(fragment);
         notifyDataSetChanged();
     }
 
-    public void openPage(String pageUrl, int position) {
-        Log.d(TAG, "openPage(" + pageUrl + ")");
+    public void openPage(OpenHABLinkedPage page, int position) {
+        Log.d(TAG, "openPage(" + page.getLink() + ")");
         int oldColumnCount = getActualColumnsNumber();
         if (position < fragmentList.size()) {
             for (int i=fragmentList.size()-1; i>=position; i--) {
@@ -144,16 +170,14 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
             }
             notifyDataSetChanged();
         }
-        OpenHABWidgetListFragment fragment = OpenHABWidgetListFragment.withPage(pageUrl, openHABBaseUrl,
-                sitemapRootUrl, openHABUsername, openHABPassword, position);
+        OpenHABWidgetListFragment fragment = OpenHABWidgetListFragment.withPage(page.getLink(),
+                page.getTitle(), position);
         fragmentList.add(fragment);
         Log.d(TAG, String.format("Old columns = %d, new columns = %d", oldColumnCount, getActualColumnsNumber()));
-//        if (getActualColumnsNumber() != oldColumnCount)
-            actualColumnCountChanged = true;
+
         Log.d(TAG, "Before notifyDataSetChanged");
         notifyDataSetChanged();
         Log.d(TAG, "After notifyDataSetChanged");
-        actualColumnCountChanged = false;
     }
 
     public void onPageScrolled(int i, float v, int i2) {
@@ -167,7 +191,8 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
         if (pageSelected < fragmentList.size() - 1) {
             Log.d(TAG, "new position is less then current");
             if (columnsNumber > 1) { // In multicolumn we will modify fragment list immediately
-                fragmentList.get(pageSelected).clearSelection();
+                if (fragmentList.get(pageSelected) instanceof OpenHABWidgetListFragment)
+                    ((OpenHABWidgetListFragment)fragmentList.get(pageSelected)).clearSelection();
                 for(int i=fragmentList.size()-1; i>mSelectedPage; i--) {
                     Log.d(TAG, String.format("Removing page %d", i));
                     fragmentList.remove(i);
@@ -196,10 +221,23 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
 
     }
 
+    private void removeLastFragmentIfNotWidgetList() {
+        while (!(fragmentList.get(fragmentList.size() - 1) instanceof OpenHABWidgetListFragment) &&
+                fragmentList.size() > 0) {
+            fragmentList.remove(fragmentList.size() - 1);
+        }
+    }
+
     @Override
     public CharSequence getPageTitle(int position) {
         Log.d(TAG, String.format("getPageTitle(%d)", position));
-        return fragmentList.get(position).getTitle();
+        if (position > fragmentList.size() - 1) {
+            return null;
+        }
+        if (fragmentList.get(position) instanceof OpenHABWidgetListFragment) {
+            return ((OpenHABWidgetListFragment) fragmentList.get(position)).getTitle();
+        }
+        return null;
     }
 
     public int getColumnsNumber() {
@@ -210,35 +248,11 @@ public class OpenHABFragmentPagerAdapter extends FragmentStatePagerAdapter imple
         this.columnsNumber = columnsNumber;
     }
 
-    public String getOpenHABBaseUrl() {
-        return openHABBaseUrl;
-    }
-
-    public void setOpenHABBaseUrl(String openHABBaseUrl) {
-        this.openHABBaseUrl = openHABBaseUrl;
-    }
-
     public String getSitemapRootUrl() {
         return sitemapRootUrl;
     }
 
     public void setSitemapRootUrl(String sitemapRootUrl) {
         this.sitemapRootUrl = sitemapRootUrl;
-    }
-
-    public String getOpenHABUsername() {
-        return openHABUsername;
-    }
-
-    public void setOpenHABUsername(String openHABUsername) {
-        this.openHABUsername = openHABUsername;
-    }
-
-    public String getOpenHABPassword() {
-        return openHABPassword;
-    }
-
-    public void setOpenHABPassword(String openHABPassword) {
-        this.openHABPassword = openHABPassword;
     }
 }

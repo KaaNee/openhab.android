@@ -1,14 +1,10 @@
-/**
- * Copyright (c) 2010-2014, openHAB.org and others.
+/*
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- *  @author Victor Belov
- *  @since 1.4.0
- *
+ *   All rights reserved. This program and the accompanying materials
+ *   are made available under the terms of the Eclipse Public License v1.0
+ *   which accompanies this distribution, and is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.openhab.habdroid.ui.widget;
@@ -41,7 +37,7 @@ import org.openhab.habdroid.R;
  */
 public class ColorPicker extends View {
 
-	private static final String TAG = "ColorPicker";
+	private static final String TAG = ColorPicker.class.getSimpleName();
 	/*
 	 * Constants used to save/restore the instance state.
 	 */
@@ -138,7 +134,7 @@ public class ColorPicker extends View {
 	 * {@code true} if the user clicked on the brightness pointer to start the move mode. {@code false} once
 	 * the user stops touching the screen.
 	 *
-	 * @see #inTouchEvent( android.view.MotionEvent )
+	 * @see ( android.view.MotionEvent )
 	 */
 	private boolean mUserIsMovingBrightnessPointer = false;
 
@@ -146,7 +142,7 @@ public class ColorPicker extends View {
 	 * {@code true} if the user clicked on the brightness pointer to start the move mode. {@code false} once
 	 * the user stops touching the screen.
 	 *
-	 * @see #inTouchEvent( android.view.MotionEvent )
+	 * @see ( android.view.MotionEvent )
 	 */
 	private boolean mUserIsMovingSaturationPointer = false;
 
@@ -555,7 +551,8 @@ public class ColorPicker extends View {
 	 * <p>
 	 * This will set the lowest value of R,G,B to 0, the highest to 255, and will keep the middle
 	 * value.<br>
-	 * For values close to those on the color wheel this will result in close matches. For other
+	 * For values close to those on the color wheel this will result in close matches.
+	 * For other
 	 * values, especially shades of grey this will produce funny results.
 	 * </p>
 	 *

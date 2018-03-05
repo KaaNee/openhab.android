@@ -1,16 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-    <PreferenceCategory android:title="@string/settings_title">
-        <EditTextPreference android:key="default_openhab_url" android:title="@string/settings_openhab_url" android:summary="@string/settings_openhab_url_summary" android:defaultValue="" />
-        <EditTextPreference android:key="default_openhab_alturl" android:title="@string/settings_openhab_alturl" android:summary="@string/settings_openhab_alturl_summary" android:defaultValue="" />
-        <EditTextPreference android:key="default_openhab_username" android:title="@string/settings_openhab_username" android:summary="@string/settings_openhab_username_summary" android:defaultValue="" />
-        <EditTextPreference android:key="default_openhab_password" android:title="@string/settings_openhab_password" android:inputType="textPassword" android:summary="@string/settings_openhab_password_summary" android:defaultValue="" />
-        <CheckBoxPreference android:key="default_openhab_screentimeroff" android:title="@string/settings_openhab_screentimeroff" android:summary="@string/settings_openhab_screentimeroff_summary" android:defaultValue="false" />
-        <CheckBoxPreference android:key="default_openhab_demomode" android:title="@string/settings_openhab_demomode" android:summary="@string/settings_openhab_demomode_summary" android:defaultValue="true" />
-        <ListPreference android:key="default_openhab_theme" android:title="@string/settings_openhab_theme" android:defaultValue="dark" android:entries="@array/themeArray" android:entryValues="@array/themeValues" />
-        <CheckBoxPreference android:key="default_openhab_sslcert" android:title="@string/settings_openhab_sslcert" android:summary="@string/settings_openhab_sslcert_summary" android:defaultValue="false" />
-        <CheckBoxPreference android:key="default_openhab_sslhost" android:title="@string/settings_openhab_sslhost" android:summary="@string/settings_openhab_sslhost_summary" android:defaultValue="true" />
-        <CheckBoxPreference android:key="default_openhab_fullscreen" android:title="@string/settings_openhab_fullscreen" android:summary="@string/settings_openhab_fullscreen_summary" android:defaultValue="false" />
-        <EditTextPreference android:key="default_openhab_appversion" android:title="@string/settings_openhab_appversion" android:persistent="false" android:enabled="false" android:shouldDisableView="false"/>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/settings_connection_title">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:disableDependentsState="true"
+            android:key="default_openhab_demomode"
+            android:summary="@string/settings_openhab_demomode_summary"
+            android:title="@string/settings_openhab_demomode"/>
+        <Preference
+            android:key="default_openhab_local_connection"
+            android:persistent="false"
+            android:title="@string/settings_openhab_connection"
+            android:dependency="default_openhab_demomode"/>
+        <Preference
+            android:key="default_openhab_remote_connection"
+            android:persistent="false"
+            android:title="@string/settings_openhab_alt_connection"
+            android:dependency="default_openhab_demomode"/>
+        <Preference
+            android:key="default_openhab_ssl"
+            android:persistent="false"
+            android:title="@string/settings_openhab_sslsettings"
+            android:dependency="default_openhab_demomode"/>
+        <Preference
+            android:clickable="true"
+            android:key="default_openhab_clear_default_sitemap"
+            android:title="@string/settings_clear_default_sitemap" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/settings_display_title">
+        <ListPreference
+            android:key="default_openhab_theme"
+            android:title="@string/settings_openhab_theme"
+            android:defaultValue="@string/theme_value_light"
+            android:summary="%s"
+            android:entries="@array/themeArray"
+            android:entryValues="@array/themeValues" />
+        <ListPreference
+            android:title="@string/settings_openhab_icon_format"
+            android:key="iconFormatType"
+            android:defaultValue="@string/settings_openhab_icon_format_value_png"
+            android:summary="%s"
+            android:entries="@array/iconTypeNames"
+            android:entryValues="@array/iconTypeValues" />
+        <Preference
+            android:clickable="true"
+            android:key="default_openhab_cleacache"
+            android:title="@string/mainmenu_openhab_clearcache" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="default_openhab_screentimeroff"
+            android:summary="@string/settings_openhab_screentimeroff_summary"
+            android:title="@string/settings_openhab_screentimeroff" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="default_openhab_fullscreen"
+            android:summary="@string/settings_openhab_fullscreen_summary"
+            android:title="@string/settings_openhab_fullscreen" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/settings_misc_title">
+        <RingtonePreference
+            android:key="default_openhab_alertringtone"
+            android:persistent="true"
+            android:ringtoneType="ringtone|notification"
+            android:showSilent="true"
+            android:title="@string/settings_ringtone"></RingtonePreference>
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="default_openhab_debug_messages"
+            android:summary="@string/settings_debug_messages_summary"
+            android:title="@string/settings_debug_messages_title" />
     </PreferenceCategory>
 </PreferenceScreen>

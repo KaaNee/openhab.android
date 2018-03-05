@@ -1,89 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:layout_width="fill_parent"
-  android:layout_height="wrap_content"
-  android:orientation="horizontal"
-  android:descendantFocusability="blocksDescendants"
-  android:paddingLeft="@dimen/widgetlist_item_left_margin"
-  android:paddingRight="@dimen/widgetlist_item_right_margin"
-  android:background="?android:activatedBackgroundIndicator"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:activatedBackgroundIndicator"
+    android:descendantFocusability="blocksDescendants"
+    tools:layout_editor_absoluteY="25dp">
 
-        >
-  <LinearLayout
-	    android:id="@+id/rollershutterleftlayout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" 
-		android:layout_alignParentLeft="true"
-      >
-<org.openhab.habdroid.util.MySmartImageView 
-        android:paddingTop="6dip" 
-        android:paddingBottom="6dip" 
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" 
-        android:id="@+id/widgetimage"
-		android:minHeight="50dip"
-		android:minWidth="50dip"
-		android:maxHeight="50dip"
-		android:maxWidth="50dip"
-		/>
-<TextView android:id="@+id/widgetlabel"
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:textAppearance="?android:attr/textAppearanceMedium"
-  			android:layout_gravity="center_vertical"
-    	/>
-</LinearLayout>
-  <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" 
-		android:layout_alignParentRight="true"
-        android:layout_centerInParent="true"
+    <include
+        android:id="@+id/rollershutterleftlayout"
+        layout="@layout/openhabwidgetlist_icontext"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/rollershutterbutton_up"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginRight="8dp" />
+
+    <ImageButton
+        android:id="@+id/rollershutterbutton_up"
+        android:layout_width="46dip"
+        android:layout_height="46dip"
+        android:contentDescription="@string/content_description_open_roller_shutter"
         android:focusable="false"
         android:focusableInTouchMode="false"
-      >
-<ImageButton
-        android:id="@+id/rollershutterbutton_up"
         android:paddingLeft="3dip"
         android:paddingRight="3dip"
-        android:layout_width="40dip"
-        android:layout_height="wrap_content"
         android:src="@drawable/ic_action_up"
-        android:layout_gravity="center_vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/rollershutterbutton_stop"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/rollershutterbutton_stop"
+        android:layout_width="46dip"
+        android:layout_height="46dip"
+        android:contentDescription="@string/content_description_stop_roller_shutter"
         android:focusable="false"
         android:focusableInTouchMode="false"
-        />
-<ImageButton
-        android:id="@+id/rollershutterbutton_stop"
         android:paddingLeft="7dip"
         android:paddingRight="7dip"
+        android:src="@drawable/ic_action_cancel"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/rollershutterbutton_down"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/rollershutterbutton_down"
         android:layout_width="46dip"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_action_cancel" 
-        android:layout_gravity="center_vertical"
+        android:layout_height="46dip"
+        android:contentDescription="@string/content_description_close_roller_shutter"
         android:focusable="false"
         android:focusableInTouchMode="false"
-        />
-<ImageButton
-        android:id="@+id/rollershutterbutton_down"
         android:paddingLeft="3dip"
         android:paddingRight="3dip"
-        android:layout_width="40dip"
-        android:layout_height="wrap_content"
         android:src="@drawable/ic_action_down"
-        android:layout_gravity="center_vertical"
-        android:focusable="false"
-        android:focusableInTouchMode="false"
-        />
-</LinearLayout>
-<LinearLayout 
-    	android:id="@+id/listdivider"
-        android:layout_width="fill_parent"
-        android:layout_height="1dip"
-        android:background="?android:attr/listDivider"
-        android:orientation="horizontal"
-        android:layout_below="@+id/rollershutterleftlayout"
-        android:layout_marginLeft="@dimen/widgetlist_divider_left_margin"
-        android:layout_marginRight="@dimen/widgetlist_divider_right_margin"
-       />
-</RelativeLayout>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</android.support.constraint.ConstraintLayout>

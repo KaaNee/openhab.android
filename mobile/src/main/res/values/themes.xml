@@ -1,19 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="HABDroid.Dark" parent="android:Theme.Holo">
-        <item name="customMicIcon">@drawable/menu_mic_dark</item>
-        <item name="android:actionBarStyle">@style/HABDroid.Dark.ActionBar</item>
+
+    <style name="HABDroid.Light" parent="@style/Theme.AppCompat.Light">
         <item name="widgetlistItemDivider">?android:dividerHorizontal</item>
+        <item name="frameWidgetDividerBackground">@drawable/material_divider</item>
+
+        <item name="colorPrimary">@color/openhab_orange</item>
+        <item name="colorAccent">@color/openhab_orange</item>
+        <item name="colorPrimaryDark">#BF360C</item>
+
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowActionBarOverlay">false</item>
+        <item name="android:windowBackground">?android:colorBackground</item>
+
+        <item name="themedDrawerBackground">?android:colorBackground</item>
+        <item name="themedHeaderTextColor">@color/colorAccent_themeDark</item>
+
+        <item name="mal_card_background">@color/about_libraries_window_background</item>
+        <item name="mal_color_primary">@color/about_libraries_title_openSource</item>
+        <item name="mal_color_secondary">@color/about_libraries_text_openSource</item>
+
+        <item name="chartTheme">white</item>
     </style>
-    <style name="HABDroid.Light" parent="android:Theme.Holo.Light">
-        <item name="customMicIcon">@drawable/menu_mic_light</item>
-        <item name="android:actionBarStyle">@style/HABDroid.Light.ActionBar</item>
+
+    <style name="HABDroid.Dark" parent="@style/Theme.AppCompat">
         <item name="widgetlistItemDivider">?android:dividerHorizontal</item>
+        <item name="frameWidgetDividerBackground">@drawable/material_divider_dark</item>
+
+        <item name="colorPrimary">#9E9E9E</item>
+        <item name="colorAccent">#9E9E9E</item>
+        <item name="colorPrimaryDark">#212121</item>
+        <item name="android:itemBackground">#212121</item>
+        <item name="android:itemTextAppearance">@style/whiteText</item>
+
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowActionBarOverlay">false</item>
+        <item name="android:windowBackground">?android:colorBackground</item>
+
+        <item name="themedDrawerBackground">?android:colorBackground</item>
+        <item name="themedHeaderTextColor">@color/colorAccent_themeDark</item>
+
+        <item name="about_libraries_window_background">
+            @color/about_libraries_window_background_dark
+        </item>
+        <item name="about_libraries_card">@color/about_libraries_card_dark</item>
+        <item name="about_libraries_title_openSource">
+            @color/about_libraries_title_openSource_dark
+        </item>
+        <item name="about_libraries_text_openSource">
+            @color/about_libraries_text_openSource_dark
+        </item>
+
+        <item name="mal_card_background">@color/about_libraries_window_background_dark</item>
+        <item name="mal_color_primary">@color/about_libraries_title_openSource_dark</item>
+        <item name="mal_color_secondary">@color/about_libraries_text_openSource_dark</item>
+
+        <item name="chartTheme">dark</item>
     </style>
-    <style name="HABDroid.Dark.ActionBar" parent="@android:style/Widget.Holo.ActionBar">
-        <item name="android:icon">@drawable/openhabicon</item>
+
+    <style name="HABDroid.Black" parent="@style/Theme.AppCompat">
+        <item name="widgetlistItemDivider">?android:dividerHorizontal</item>
+        <item name="frameWidgetDividerBackground">@color/black</item>
+
+        <item name="colorPrimary">@color/black</item>
+        <item name="colorAccent">#9E9E9E</item>
+        <item name="colorPrimaryDark">@color/black</item>
+
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowActionBarOverlay">false</item>
+        <item name="android:windowBackground">@color/black</item>
+        <item name="android:itemBackground">@color/black</item>
+        <item name="android:itemTextAppearance">@style/whiteText</item>
+
+        <item name="themedDrawerBackground">@color/black</item>
+        <item name="themedHeaderTextColor">@color/colorAccent_themeDark</item>
+
+        <item name="about_libraries_window_background">
+            @color/about_libraries_window_background_dark
+        </item>
+        <item name="about_libraries_card">@color/about_libraries_card_dark</item>
+        <item name="about_libraries_title_openSource">
+            @color/about_libraries_title_openSource_dark
+        </item>
+        <item name="about_libraries_text_openSource">
+            @color/about_libraries_text_openSource_dark
+        </item>
+
+        <item name="mal_card_background">@color/about_libraries_window_background_dark</item>
+        <item name="mal_color_primary">@color/about_libraries_title_openSource_dark</item>
+        <item name="mal_color_secondary">@color/about_libraries_text_openSource_dark</item>
+
+        <item name="chartTheme">black</item>
     </style>
-    <style name="HABDroid.Light.ActionBar" parent="@android:style/Widget.Holo.Light.ActionBar">
-        <item name="android:icon">@drawable/openhabicon_light</item>
+
+    <style name="HABDroid.Basic_ui" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="widgetlistItemDivider">?android:dividerHorizontal</item>
+        <item name="frameWidgetDividerBackground">@drawable/material_divider</item>
+
+        <item name="colorPrimary">@color/indigo_500</item>
+        <item name="colorAccent">@color/pink_a200</item>
+        <item name="colorPrimaryDark">@color/indigo_800</item>
+
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowActionBarOverlay">false</item>
+        <item name="android:windowBackground">?android:colorBackground</item>
+
+        <item name="themedDrawerBackground">?android:colorBackground</item>
+        <item name="themedHeaderTextColor">@color/colorAccent_themeDark</item>
+
+        <item name="mal_card_background">@color/about_libraries_window_background</item>
+        <item name="mal_color_primary">@color/about_libraries_title_openSource</item>
+        <item name="mal_color_secondary">@color/about_libraries_text_openSource</item>
+
+        <item name="chartTheme">white</item>
+    </style>
+
+    <style name="HABDroid.Basic_ui_dark" parent="Theme.AppCompat.NoActionBar">
+        <item name="widgetlistItemDivider">?android:dividerHorizontal</item>
+        <item name="frameWidgetDividerBackground">@drawable/material_divider_dark</item>
+
+        <item name="colorPrimary">@color/indigo_500</item>
+        <item name="colorAccent">@color/pink_a200</item>
+        <item name="colorPrimaryDark">@color/indigo_800</item>
+
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowActionBarOverlay">false</item>
+        <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="android:itemBackground">#303030</item>
+        <item name="android:itemTextAppearance">@style/whiteText</item>
+
+        <item name="themedDrawerBackground">?android:colorBackground</item>
+        <item name="themedHeaderTextColor">@color/colorAccent_themeDark</item>
+
+        <item name="about_libraries_window_background">
+            @color/about_libraries_window_background_dark
+        </item>
+        <item name="about_libraries_card">@color/about_libraries_card_dark</item>
+        <item name="about_libraries_title_openSource">
+            @color/about_libraries_title_openSource_dark
+        </item>
+        <item name="about_libraries_text_openSource">
+            @color/about_libraries_text_openSource_dark
+        </item>
+
+        <item name="mal_card_background">@color/about_libraries_window_background_dark</item>
+        <item name="mal_color_primary">@color/about_libraries_title_openSource_dark</item>
+        <item name="mal_color_secondary">@color/about_libraries_text_openSource_dark</item>
+
+        <item name="chartTheme">dark</item>
     </style>
 </resources>

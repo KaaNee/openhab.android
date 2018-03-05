@@ -1,33 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:layout_width="fill_parent"
-  android:layout_height="wrap_content"
-  android:focusable="false"
-  android:paddingLeft="@dimen/widgetlist_item_left_margin"
-  android:paddingRight="@dimen/widgetlist_item_right_margin"
-	>
-    <TextView android:id="@+id/widgetlabel"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="6dip"
-        android:layout_centerVertical="true"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textStyle="bold"
-        android:textAllCaps="true"
-        android:textColor="#ff32b2e2"
-        android:paddingLeft="5dp"
-    />
-<LinearLayout 
-    	android:id="@+id/listdivider"
-        android:layout_width="fill_parent"
-        android:layout_height="2dip"
-        android:background="#ff32b2e2"
-        android:orientation="horizontal"
-        android:layout_below="@+id/widgetlabel"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:minHeight="50dp"
+    android:paddingLeft="@dimen/widgetlist_item_left_margin"
+    android:paddingRight="@dimen/widgetlist_item_right_margin"
+    android:paddingStart="@dimen/widgetlist_item_left_margin"
+    android:paddingEnd="@dimen/widgetlist_item_right_margin">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="8dip"
+        android:layout_marginBottom="7dip"
         android:layout_marginLeft="@dimen/widgetlist_divider_left_margin"
         android:layout_marginRight="@dimen/widgetlist_divider_right_margin"
-        android:layout_marginTop="7dip"
-        android:layout_marginBottom="7dip"
-       />
-</RelativeLayout>
+        android:background="?attr/frameWidgetDividerBackground"
+        android:gravity="top"
+        android:orientation="horizontal"
+        android:layout_marginStart="@dimen/widgetlist_divider_left_margin"
+        android:layout_marginEnd="@dimen/widgetlist_divider_right_margin" />
+
+    <TextView
+        android:id="@+id/widgetlabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:textColor="?attr/themedHeaderTextColor"
+        android:textStyle="bold"
+        tools:ignore="SelectableText" />
+
+</LinearLayout>
